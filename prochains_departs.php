@@ -1,5 +1,5 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<?
+<?php
 /*
  *  Prochains departs sur le web
  *  Copyright (C) 2010 Richard Genoud
@@ -23,7 +23,15 @@
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
-if (!empty($_GET)) extract($_GET);
+
+//if (!empty($_GET)) extract($_GET);    // faille de sécu
+
+if(isset($_GET['gid']))
+    $gid = $_GET['gid'];
+if(isset($_GET['station']))
+    $station = $_GET['station'];
+if(isset($_GET['nb']))
+    $nb = $_GET['nb'];
 
 ?>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fr" lang="fr">
@@ -33,10 +41,14 @@ if (!empty($_GET)) extract($_GET);
 	<meta name="description" content="clone du widget prochains departs de la sncf"/>
 	<meta name="keywords" content="sncf,horaires,prochains departs,gare en mouvement,retard,train"/>
 	<title>Prochains Departs <? echo $station; ?></title>
+    <style>
+        tr:hover {
+            background: #ccccff;
+        }
+    </style>
 </head>
 <body>
-<?
-
+<?php
 /*
 
 exit_erreur() {
@@ -55,7 +67,7 @@ exit_erreur() {
  */
 ?>
 <center>Prochains Departs <? echo $station; ?></center>
-<?
+<?php
 
 $day = date("Y;m;d");
 $hour = date("H;i");
@@ -68,14 +80,17 @@ if (empty($gid)) {
 	echo "error, no gid defined !</br>";
 } else {
 	/* send the request with curl */
-	$ch = curl_init();
+	//$ch = curl_init();
 	$url = "http://widget.canaltp.fr/Prochains_departs_15122009/dev/index.php?gare=$gid&nbredepart=$nb&datedepart=$day&heuredep=$hour&modedep=1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1&numafficheur=0";
-	curl_setopt($ch, CURLOPT_URL, $url);
-	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-	$output = curl_exec($ch);
-	curl_close($ch);
+    //echo '<pre>' . $url . '</pre>';
+	//curl_setopt($ch, CURLOPT_URL, $url);
+	//curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+	//$output = curl_exec($ch);
+    $data = file_get_contents($url);
+    //echo '<pre>' . $output . '</pre>';
+	//curl_close($ch);
 
-	/* now, just parse the result */
+	/* now, just parse the result
 	$pattern[0] = "@^.*&ligne0@";
 	$replace[0] = "&ligne0";
 	$pattern[1] = "@&@";
@@ -83,15 +98,52 @@ if (empty($gid)) {
 	$pattern[2] = "@;@";
 	$replace[2] = "</td>\n<td>";
 	$pattern[3] = "@ligne(\d+)=@";
-	$replace[3] = "$1:";
+	$replace[3] = "$1</td>\n<td>";
 	$pattern[4] = "@Train TER@";
 	$replace[4] = "TER";
-	$output = preg_replace($pattern, $replace, $output);
+	$output = preg_replace($pattern, $replace, $data);*/
+    
+    $zpattern[0] = "@^.*&ligne0@";
+	$zreplace[0] = "ligne0";
+    $zpattern[1] = "@ligne(\d+)=@";
+	$zreplace[1] = "$1;";
+    $zoutput = preg_replace($zpattern, $zreplace, $data);
+    $table = explode('&', $zoutput);
+    foreach($table as $key => $elem) {
+        //echo '<pre>' . $elem . '</pre>';
+        $table[$key] = explode(';', $elem);
+        array_splice($table[$key], 8);              // Pour avoir toujours la même taille de ligne
+        if(!empty($table[$key][7]))                 // pour enlever les caractères "bizarres"
+            $table[$key][7] = substr($table[$key][7], 2);
+    }
+    
+    /*
+    echo '<pre>';
+    print_r($table);
+    echo '</pre>';
+    */
 
-	/* output the result */
+	/* output the result
 	echo "<table><tr><td>\n";
 	echo "$output\n";
-	echo "</td></tr>\n</table>\n";
+	echo "</td></tr>\n</table>\n"; */
+    
+    echo '<table>';
+    foreach($table as $row) {
+        echo '<tr><td>';
+        if(!empty($row[6]))
+            echo '<img src="img/retard.png" />';
+        else
+            echo '<img src="img/ok.png" />';
+        echo '</td>';
+        foreach($row as $index => $cell) {
+            if($index == 0)
+                continue;
+            echo '<td>' . trim($cell) . '</td>';
+        }
+        echo '</tr>';
+    }
+    echo '</table>';
 }
 ?>
 </body>
