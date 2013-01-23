@@ -36,7 +36,7 @@ if(isset($_GET['nb']))
 ?>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fr" lang="fr">
 <head>
-	<meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
 	<meta http-equiv="Content-Script-Type" content="text/javascript"/>
 	<meta name="description" content="clone du widget prochains departs de la sncf"/>
 	<meta name="keywords" content="sncf,horaires,prochains departs,gare en mouvement,retard,train"/>
@@ -79,36 +79,15 @@ if (($nb < 1) || ($nb > 60)) {
 if (empty($gid)) {
 	echo "error, no gid defined !</br>";
 } else {
-	/* send the request with curl */
-	//$ch = curl_init();
 	$url = "http://widget.canaltp.fr/Prochains_departs_15122009/dev/index.php?gare=$gid&nbredepart=$nb&datedepart=$day&heuredep=$hour&modedep=1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1&numafficheur=0";
-    //echo '<pre>' . $url . '</pre>';
-	//curl_setopt($ch, CURLOPT_URL, $url);
-	//curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-	//$output = curl_exec($ch);
     $data = file_get_contents($url);
-    //echo '<pre>' . $output . '</pre>';
-	//curl_close($ch);
 
-	/* now, just parse the result
-	$pattern[0] = "@^.*&ligne0@";
-	$replace[0] = "&ligne0";
-	$pattern[1] = "@&@";
-	$replace[1] = "</td></tr>\n<tr><td>";
-	$pattern[2] = "@;@";
-	$replace[2] = "</td>\n<td>";
-	$pattern[3] = "@ligne(\d+)=@";
-	$replace[3] = "$1</td>\n<td>";
-	$pattern[4] = "@Train TER@";
-	$replace[4] = "TER";
-	$output = preg_replace($pattern, $replace, $data);*/
-    
-    $zpattern[0] = "@^.*&ligne0@";
-	$zreplace[0] = "ligne0";
-    $zpattern[1] = "@ligne(\d+)=@";
-	$zreplace[1] = "$1;";
-    $zoutput = preg_replace($zpattern, $zreplace, $data);
-    $table = explode('&', $zoutput);
+    $pattern[0] = "@^.*&ligne0@";
+	$replace[0] = "ligne0";
+    $pattern[1] = "@ligne(\d+)=@";
+	$replace[1] = "$1;";
+    $output = preg_replace($pattern, $replace, $data);
+    $table = explode('&', $output);
     foreach($table as $key => $elem) {
         //echo '<pre>' . $elem . '</pre>';
         $table[$key] = explode(';', $elem);
@@ -117,16 +96,10 @@ if (empty($gid)) {
             $table[$key][7] = substr($table[$key][7], 2);
     }
     
-    /*
-    echo '<pre>';
+    // Debug :
+    echo '<!--';
     print_r($table);
-    echo '</pre>';
-    */
-
-	/* output the result
-	echo "<table><tr><td>\n";
-	echo "$output\n";
-	echo "</td></tr>\n</table>\n"; */
+    echo '-->';
     
     echo '<table>';
     foreach($table as $row) {
@@ -141,7 +114,7 @@ if (empty($gid)) {
                 continue;
             echo '<td>' . trim($cell) . '</td>';
         }
-        echo '</tr>';
+        echo '</tr>' . "\n";
     }
     echo '</table>';
 }
